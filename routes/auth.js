@@ -12,12 +12,25 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // Register
+
 router.post('/register', async (req, res) => {
   const { email, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hashed });
-  res.json({ message: 'User created', userId: user._id });
+
+  console.log('📥 Register endpoint hit');
+  console.log('Received:', { email, password });
+
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({ email, password: hashed });
+
+    console.log('✅ User created:', user._id);
+    res.json({ message: 'User created successfully', userId: user._id });
+  } catch (err) {
+    console.error('❌ Error in registration:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
+
 
 // Login
 router.post('/login', async (req, res) => {
@@ -31,3 +44,5 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+
