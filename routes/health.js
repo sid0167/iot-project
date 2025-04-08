@@ -4,7 +4,22 @@ const HealthData = require('../models/HealthData');
 const router = express.Router();
 const moment = require('moment'); 
 
-// Route to get 3-month health data
+// ✅ Middleware to verify JWT token (move this up)
+const authMiddleware = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: 'No token provided' });
+
+  try {
+    const token = auth.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// ✅ Route to get 3-month health data
 router.get('/last-three-months', authMiddleware, async (req, res) => {
   try {
     const threeMonthsAgo = moment().subtract(3, 'months').toDate();
@@ -19,21 +34,6 @@ router.get('/last-three-months', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// ✅ Middleware to verify JWT token
-const authMiddleware = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ message: 'No token provided' });
-
-  try {
-    const token = auth.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
 
 // ✅ POST health data
 router.post('/', authMiddleware, async (req, res) => {
@@ -80,6 +80,7 @@ router.get('/all', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 // ✅ GET health prediction based on last week's average
 router.get('/predict', authMiddleware, async (req, res) => {
   const oneWeekAgo = moment().subtract(7, 'days').toDate();
@@ -101,8 +102,5 @@ router.get('/predict', authMiddleware, async (req, res) => {
     averageHeartRate: heartAvg.toFixed(2)
   });
 });
-
-
-
 
 module.exports = router;
