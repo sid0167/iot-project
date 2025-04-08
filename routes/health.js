@@ -2,6 +2,23 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const HealthData = require('../models/HealthData');
 const router = express.Router();
+const moment = require('moment'); 
+
+// Route to get 3-month health data
+router.get('/last-three-months', authMiddleware, async (req, res) => {
+  try {
+    const threeMonthsAgo = moment().subtract(3, 'months').toDate();
+    const data = await HealthData.find({
+      user: req.userId,
+      timestamp: { $gte: threeMonthsAgo }
+    }).sort({ timestamp: 1 });
+
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error fetching 3-month data:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // ✅ Middleware to verify JWT token
 const authMiddleware = (req, res, next) => {
@@ -63,5 +80,29 @@ router.get('/all', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+// ✅ GET health prediction based on last week's average
+router.get('/predict', authMiddleware, async (req, res) => {
+  const oneWeekAgo = moment().subtract(7, 'days').toDate();
+  const data = await HealthData.find({
+    user: req.userId,
+    timestamp: { $gte: oneWeekAgo }
+  });
+
+  if (data.length === 0) return res.json({ message: "No recent data" });
+
+  const avg = (arr) => arr.reduce((sum, val) => sum + val, 0) / arr.length;
+
+  const tempAvg = avg(data.map(d => d.temperature));
+  const heartAvg = avg(data.map(d => d.heartRate));
+
+  res.json({
+    prediction: "Stable",
+    averageTemperature: tempAvg.toFixed(2),
+    averageHeartRate: heartAvg.toFixed(2)
+  });
+});
+
+
+
 
 module.exports = router;

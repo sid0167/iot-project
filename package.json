@@ -17,6 +17,7 @@
     "email-existence": "^0.1.6",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
     "mongoose": "^8.13.2",
     "nodemailer": "^6.10.0"
   }
