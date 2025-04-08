@@ -104,24 +104,16 @@ router.get('/predict', authMiddleware, async (req, res) => {
 });
 // TEMP: Insert 2 weeks of sample data
 
-
+// GET /api/health/timeline
 router.get('/timeline', authMiddleware, async (req, res) => {
   try {
-    const userId = req.userId;
-
-    const data = await HealthData.find({ user: userId }).sort({ timestamp: 1 }); // oldest to newest
-    const formatted = data.map(entry => ({
-      date: entry.timestamp,
-      temperature: entry.temperature,
-      heartRate: entry.heartRate,
-      bloodPressure: entry.bloodPressure
-    }));
-
-    res.json({ timeline: formatted });
+    const data = await HealthData.find({ user: req.userId }).sort({ timestamp: 1 });
+    res.json(data);
   } catch (err) {
     console.error('Timeline fetch error:', err);
-    res.status(500).json({ message: 'Server error fetching timeline' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 module.exports = router;
