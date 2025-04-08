@@ -103,31 +103,6 @@ router.get('/predict', authMiddleware, async (req, res) => {
   });
 });
 // TEMP: Insert 2 weeks of sample data
-router.post('/seed-2-weeks', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const dataToInsert = [];
-
-    for (let i = 0; i < 14; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-
-      dataToInsert.push({
-        temperature: (36 + Math.random() * 2).toFixed(1), // 36-38°C
-        bloodPressure: (110 + Math.random() * 20).toFixed(0), // 110-130
-        heartRate: (60 + Math.random() * 20).toFixed(0), // 60-80 bpm
-        timestamp: date,
-        user: userId
-      });
-    }
-
-    await HealthData.insertMany(dataToInsert);
-    res.json({ message: "✅ Seeded 2 weeks of health data successfully" });
-  } catch (err) {
-    console.error("❌ Error seeding data:", err.message);
-    res.status(500).json({ message: "Server error while seeding" });
-  }
-});
 
 
 module.exports = router;
