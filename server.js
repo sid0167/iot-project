@@ -13,10 +13,10 @@ app.use(express.json());
 
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+
 app.get('/', (req, res) => {
   res.send('IoT Health API is running ✅');
 });
-
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -25,4 +25,4 @@ mongoose.connect(process.env.MONGO_URI)
       console.log(`Server running on http://localhost:${process.env.PORT}`);
     });
   })
-  .catch((err) => console.error('DB error:', err));
+  .catch(err => console.error('DB error:', err));
