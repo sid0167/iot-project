@@ -116,37 +116,69 @@ router.get('/timeline', authMiddleware, async (req, res) => {
 });
 
 // routes/health.js
+
 router.get('/summary-for-ai', authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const records = await Health.find({ userId });
 
-    if (!records.length) {
-      return res.status(404).json({ message: 'No health records found' });
-    }
+    if (!records.length) return res.status(404).json({ message: 'No health records found' });
 
     const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
 
-    const temperatureAvg = avg(records.map(r => r.temperature)).toFixed(1);
-    const heartRateAvg = avg(records.map(r => r.heartRate)).toFixed(1);
-    const bloodPressureRawAvg = avg(records.map(r => r.bloodPressure)).toFixed(0);
-    
-    // Format blood pressure as systolic/-- for Gemini
-    const bloodPressureAvg = `${bloodPressureRawAvg}/--`;
-
     const summary = {
-      temperatureAvg,
-      heartRateAvg,
-      bloodPressureAvg,
+      temperature: avg(records.map(r => r.temperature)).toFixed(1),
+      heartRate: avg(records.map(r => r.heartRate)).toFixed(1),
+      bloodPressure: avg(records.map(r => r.bloodPressure)).toFixed(1),
     };
 
     res.json(summary);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
+router.post('/gemini', authMiddleware, async (req, res) => {
+  const { mode, userMessage } = req.body;
+  const userId = req.userId;
+
+  try {
+    let prompt = '';
+
+    if (mode === 'advice') {
+      const healthData = await Health.find({ userId });
+      if (!healthData.length) return res.status(404).json({ message: 'No data for advice' });
+
+      const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+      const summary = {
+        temperature: avg(healthData.map(r => r.temperature)).toFixed(1),
+        heartRate: avg(healthData.map(r => r.heartRate)).toFixed(1),
+        bloodPressure: avg(healthData.map(r => r.bloodPressure)).toFixed(1),
+      };
+
+      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.bloodPressure}. Give personalized health and lifestyle advice.`;
+    } else if (mode === 'chat') {
+      prompt = userMessage;
+    } else {
+      return res.status(400).json({ message: 'Invalid mode' });
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+    const data = await response.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
+
+    res.json({ reply });
+  } catch (error) {
+    res.status(500).json({ message: 'Gemini request failed' });
+  }
+});
 
 
 module.exports = router;
