@@ -115,5 +115,27 @@ router.get('/timeline', authMiddleware, async (req, res) => {
   }
 });
 
+// routes/health.js
+router.get('/summary-for-ai', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const records = await Health.find({ userId });
+
+    if (!records.length) return res.status(404).json({ message: 'No health records found' });
+
+    const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    const summary = {
+      temperatureAvg: avg(records.map(r => r.temperature)).toFixed(1),
+      heartRateAvg: avg(records.map(r => r.heartRate)).toFixed(1),
+      bloodPressureAvg: avg(records.map(r => r.bloodPressure)).toFixed(1),
+    };
+
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 module.exports = router;
