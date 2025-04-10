@@ -125,7 +125,9 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 
     if (mode === 'advice') {
       const healthData = await Health.find({ userId });
-      if (!healthData.length) return res.status(404).json({ message: 'No health data found for advice.' });
+      if (!healthData.length) {
+        return res.status(404).json({ message: 'No data for advice' });
+      }
 
       const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
       const summary = {
@@ -134,35 +136,32 @@ router.post('/gemini', authMiddleware, async (req, res) => {
         bloodPressure: avg(healthData.map(r => r.bloodPressure)).toFixed(1),
       };
 
-      prompt = `My health vitals are:\n- Temperature: ${summary.temperature}°C\n- Heart Rate: ${summary.heartRate} bpm\n- Blood Pressure: ${summary.bloodPressure} mmHg\nPlease provide personalized health and lifestyle advice.`;
+      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.bloodPressure}. Give personalized health and lifestyle advice.`;
     } else if (mode === 'chat') {
-      if (!userMessage) return res.status(400).json({ message: 'No message provided for chat.' });
+      if (!userMessage) {
+        return res.status(400).json({ message: 'No message provided for chat.' });
+      }
       prompt = userMessage;
     } else {
-      return res.status(400).json({ message: 'Invalid mode. Use "chat" or "advice".' });
+      return res.status(400).json({ message: 'Invalid mode' });
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-        }),
-      }
-    );
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
+    });
 
     const data = await geminiResponse.json();
 
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
     res.json({ message: reply });
-
   } catch (error) {
     console.error('Gemini Error:', error);
     res.status(500).json({ message: 'Gemini request failed' });
