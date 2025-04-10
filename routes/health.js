@@ -116,7 +116,6 @@ router.get('/timeline', authMiddleware, async (req, res) => {
 });
 
 // routes/health.js
-
 router.post('/gemini', authMiddleware, async (req, res) => {
   const { mode, userMessage } = req.body;
   const userId = req.userId;
@@ -124,12 +123,9 @@ router.post('/gemini', authMiddleware, async (req, res) => {
   try {
     let prompt = '';
 
-    // 👤 Mode: advice
     if (mode === 'advice') {
       const healthData = await Health.find({ userId });
-      if (!healthData.length) {
-        return res.status(404).json({ message: 'No health data available for advice.' });
-      }
+      if (!healthData.length) return res.status(404).json({ message: 'No health data found for advice.' });
 
       const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
       const summary = {
@@ -138,53 +134,38 @@ router.post('/gemini', authMiddleware, async (req, res) => {
         bloodPressure: avg(healthData.map(r => r.bloodPressure)).toFixed(1),
       };
 
-      prompt = `My health vitals are: Temperature: ${summary.temperature}°C, Heart Rate: ${summary.heartRate} bpm, Blood Pressure: ${summary.bloodPressure} mmHg. Provide me personalized health and lifestyle advice.`;
-
-    // 💬 Mode: chat
+      prompt = `My health vitals are:\n- Temperature: ${summary.temperature}°C\n- Heart Rate: ${summary.heartRate} bpm\n- Blood Pressure: ${summary.bloodPressure} mmHg\nPlease provide personalized health and lifestyle advice.`;
     } else if (mode === 'chat') {
-      if (!userMessage) {
-        return res.status(400).json({ message: 'Message is required for chat mode.' });
-      }
+      if (!userMessage) return res.status(400).json({ message: 'No message provided for chat.' });
       prompt = userMessage;
-
-    // ❌ Invalid mode
     } else {
-      return res.status(400).json({ message: 'Invalid mode. Must be "chat" or "advice".' });
+      return res.status(400).json({ message: 'Invalid mode. Use "chat" or "advice".' });
     }
 
-    // 🌐 Call Gemini API
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      }),
-    });
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      }
+    );
 
     const data = await geminiResponse.json();
-    console.log('Gemini response:', JSON.stringify(data, null, 2)); // 🪵 Debug Gemini response
 
-    // ✅ Extract reply
-    if (data.candidates && data.candidates.length > 0) {
-      const reply = data.candidates[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
-      return res.json({ message: reply });
-    }
-
-    // ❗ Check for Gemini feedback or errors
-    if (data.promptFeedback) {
-      return res.status(400).json({ message: `Gemini feedback: ${data.promptFeedback}` });
-    }
-
-    if (data.error) {
-      return res.status(400).json({ message: `Gemini error: ${data.error.message}` });
-    }
-
-    // ❓ Unknown response format
-    return res.status(500).json({ message: 'Unexpected Gemini response format.' });
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
+    res.json({ message: reply });
 
   } catch (error) {
     console.error('Gemini Error:', error);
-    return res.status(500).json({ message: 'Failed to get response from Gemini.' });
+    res.status(500).json({ message: 'Gemini request failed' });
   }
 });
 
