@@ -117,27 +117,6 @@ router.get('/timeline', authMiddleware, async (req, res) => {
 
 // routes/health.js
 
-router.get('/summary-for-ai', authMiddleware, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const records = await Health.find({ userId });
-
-    if (!records.length) return res.status(404).json({ message: 'No health records found' });
-
-    const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-
-    const summary = {
-      temperature: avg(records.map(r => r.temperature)).toFixed(1),
-      heartRate: avg(records.map(r => r.heartRate)).toFixed(1),
-      bloodPressure: avg(records.map(r => r.bloodPressure)).toFixed(1),
-    };
-
-    res.json(summary);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 router.post('/gemini', authMiddleware, async (req, res) => {
   const { mode, userMessage } = req.body;
   const userId = req.userId;
@@ -158,24 +137,32 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 
       prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.bloodPressure}. Give personalized health and lifestyle advice.`;
     } else if (mode === 'chat') {
+      if (!userMessage) return res.status(400).json({ message: 'No message provided for chat.' });
       prompt = userMessage;
     } else {
       return res.status(400).json({ message: 'Invalid mode' });
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }],
+          },
+        ],
       }),
     });
 
-    const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
+    const data = await geminiResponse.json();
 
-    res.json({ reply });
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
+
+    res.json({ message: reply });
   } catch (error) {
+    console.error('Gemini Error:', error);
     res.status(500).json({ message: 'Gemini request failed' });
   }
 });
