@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const HealthData = require('../models/HealthData');
 const router = express.Router();
 const moment = require('moment'); 
+const Vitals = require('../models/UserVitals');
 
 // ✅ Middleware to verify JWT token (move this up)
 const authMiddleware = (req, res, next) => {
@@ -169,4 +170,32 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 });
 
 
+//hieght, weight & BMI
+router.post('/vitals', authMiddleware, async (req, res) => {
+  const { height, weight } = req.body;
+  const userId = req.userId;
+
+  if (!height || !weight) {
+    return res.status(400).json({ message: 'Height and weight are required.' });
+  }
+
+  try {
+    const heightInMeters = height / 100;
+    const bmi = (weight / (heightInMeters * heightInMeters)).toFixed(2);
+
+    const vitalsEntry = new Vitals({
+      userId,
+      height,
+      weight,
+      bmi
+    });
+
+    await vitalsEntry.save();
+
+    res.json({ message: '✅ Height, weight & BMI saved successfully.', bmi });
+  } catch (error) {
+    console.error('Vitals Save Error:', error);
+    res.status(500).json({ message: '❌ Failed to save vitals.' });
+  }
+});
 module.exports = router;
