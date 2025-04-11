@@ -171,7 +171,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 
 
 //hieght, weight & BMI
-router.post('/vitals', authMiddleware, async (req, res) => {
+router.post('/UserVitals', authMiddleware, async (req, res) => {
   const { height, weight } = req.body;
   const userId = req.userId;
 
