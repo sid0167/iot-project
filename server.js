@@ -24,8 +24,9 @@ app.get('/', (req, res) => {
 
 // Example Express route
 app.get('/bmi', (req, res) => {
-  const apiUrl = 'https://iot-project-25ym.onrender.com';  // Replace with your actual Render URL
-  res.render('bmi', { apiUrl: apiUrl });
+  const apiUrl = 'https://iot-project-25ym.onrender.com';
+  const token = req.query.token || '';
+  res.render('bmi', { apiUrl, token });
 });
 
 
