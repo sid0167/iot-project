@@ -19,6 +19,13 @@ app.get('/', (req, res) => {
   res.send('IoT Health API is running ✅');
 });
 
+// Example Express route
+app.get('/bmi-calculator', (req, res) => {
+  const apiUrl = 'https://iot-project-25ym.onrender.com';  // Replace with your actual Render URL
+  res.render('bmi', { apiUrl: apiUrl });
+});
+
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 

@@ -66,40 +66,51 @@
   <div id="result"></div>
 
   <script>
-    const BASE_URL = '<%= apiUrl %>'; // dynamically injected
-    const token = localStorage.getItem('token');
-
+    // Dynamically inject the base API URL passed from the backend
+    const BASE_URL = '<%= apiUrl %>';  // This will be replaced with your actual API URL in the EJS template
+    const token = localStorage.getItem('token');  // Get token from local storage for authentication
+  
     async function submitBMI() {
+      // Get height and weight from the user input fields
       const height = parseFloat(document.getElementById('height').value);
       const weight = parseFloat(document.getElementById('weight').value);
-      const resultDiv = document.getElementById('result');
-
+      const resultDiv = document.getElementById('result');  // The div where the result will be shown
+  
+      // Check if height and weight are provided
       if (!height || !weight) {
         resultDiv.textContent = 'Please enter both height and weight.';
         return;
       }
-
+  
+      // Sending the data to the backend API
       try {
+        // Make the POST request to the server with height, weight, and authorization header
         const res = await fetch(`${BASE_URL}/api/health/UserVitals`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`  // Include the JWT token for authentication
           },
-          body: JSON.stringify({ height, weight })
+          body: JSON.stringify({ height, weight })  // Send the height and weight in the body
         });
-
+  
+        // Parse the response from the server
         const data = await res.json();
+  
         if (res.ok) {
+          // If the request was successful, display the BMI and category
           resultDiv.textContent = `✅ BMI Recorded: ${data.bmi} (${data.category})`;
         } else {
+          // If the request was not successful, display the error message
           resultDiv.textContent = `❌ ${data.message}`;
         }
       } catch (err) {
-        console.error(err);
+        // Handle any errors that occur during the fetch operation
+        console.error('Error:', err);
         resultDiv.textContent = '❌ Something went wrong.';
       }
     }
   </script>
+  
 </body>
 </html>
