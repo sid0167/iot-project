@@ -9,7 +9,10 @@ const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://iot-project-frontend-2dqv.onrender.com', // ✅ Replace this with your actual frontend Render URL
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/health', healthRoutes);
@@ -20,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 // Example Express route
-app.get('/bmi-calculator', (req, res) => {
+app.get('/bmi', (req, res) => {
   const apiUrl = 'https://iot-project-25ym.onrender.com';  // Replace with your actual Render URL
   res.render('bmi', { apiUrl: apiUrl });
 });
