@@ -211,4 +211,5 @@ router.post('/UserVitals', authMiddleware, async (req, res) => {
     res.status(500).json({ message: '❌ Failed to save vitals.' });
   }
 });
+module.exports = router;
 
