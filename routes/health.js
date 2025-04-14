@@ -171,6 +171,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 
 
 //hieght, weight & BMI
+// height, weight & BMI with category
 router.post('/UserVitals', authMiddleware, async (req, res) => {
   const { height, weight } = req.body;
   const userId = req.userId;
@@ -183,6 +184,14 @@ router.post('/UserVitals', authMiddleware, async (req, res) => {
     const heightInMeters = height / 100;
     const bmi = (weight / (heightInMeters * heightInMeters)).toFixed(2);
 
+    let category = '';
+    const bmiVal = parseFloat(bmi);
+
+    if (bmiVal < 18.5) category = 'Underweight';
+    else if (bmiVal < 24.9) category = 'Normal weight';
+    else if (bmiVal < 29.9) category = 'Overweight';
+    else category = 'Obese';
+
     const vitalsEntry = new Vitals({
       userId,
       height,
@@ -192,10 +201,14 @@ router.post('/UserVitals', authMiddleware, async (req, res) => {
 
     await vitalsEntry.save();
 
-    res.json({ message: '✅ Height, weight & BMI saved successfully.', bmi });
+    res.json({
+      message: '✅ Height, weight & BMI saved successfully.',
+      bmi,
+      category
+    });
   } catch (error) {
     console.error('Vitals Save Error:', error);
     res.status(500).json({ message: '❌ Failed to save vitals.' });
   }
 });
-module.exports = router;
+

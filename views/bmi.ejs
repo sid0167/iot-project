@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BMI Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f7fa;
+      padding: 2rem;
+      max-width: 500px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    #result {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Enter Your Details</h1>
+  <div class="form-group">
+    <label for="height">Height (in cm)</label>
+    <input type="number" id="height" placeholder="e.g. 170" required />
+  </div>
+  <div class="form-group">
+    <label for="weight">Weight (in kg)</label>
+    <input type="number" id="weight" placeholder="e.g. 65" required />
+  </div>
+  <button onclick="submitBMI()">Submit & Calculate BMI</button>
+  <div id="result"></div>
+
+  <script>
+    const BASE_URL = '<%= apiUrl %>'; // dynamically injected
+    const token = localStorage.getItem('token');
+
+    async function submitBMI() {
+      const height = parseFloat(document.getElementById('height').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const resultDiv = document.getElementById('result');
+
+      if (!height || !weight) {
+        resultDiv.textContent = 'Please enter both height and weight.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/health/UserVitals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ height, weight })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          resultDiv.textContent = `✅ BMI Recorded: ${data.bmi} (${data.category})`;
+        } else {
+          resultDiv.textContent = `❌ ${data.message}`;
+        }
+      } catch (err) {
+        console.error(err);
+        resultDiv.textContent = '❌ Something went wrong.';
+      }
+    }
+  </script>
+</body>
+</html>

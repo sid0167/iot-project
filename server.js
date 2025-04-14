@@ -18,6 +18,9 @@ app.get('/', (req, res) => {
   res.send('IoT Health API is running ✅');
 });
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB Connected');
