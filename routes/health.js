@@ -38,16 +38,16 @@ router.get('/last-three-months', authMiddleware, async (req, res) => {
 
 // ✅ POST health data
 router.post('/', authMiddleware, async (req, res) => {
-  const { temperature, bloodPressure, heartRate } = req.body;
+  const { temperature, spo2, heartRate } = req.body;
 
-  if (!temperature || !bloodPressure || !heartRate) {
+  if (!temperature || !spo2 || !heartRate) {
     return res.status(400).json({ message: 'Missing fields' });
   }
 
   try {
     const entry = await HealthData.create({
       temperature,
-      bloodPressure,
+      spo2,
       heartRate,
       user: req.userId,
       timestamp: new Date()
@@ -134,10 +134,10 @@ router.post('/gemini', authMiddleware, async (req, res) => {
       const summary = {
         temperature: avg(healthData.map(r => r.temperature)).toFixed(1),
         heartRate: avg(healthData.map(r => r.heartRate)).toFixed(1),
-        bloodPressure: avg(healthData.map(r => r.bloodPressure)).toFixed(1),
+        spo2: avg(healthData.map(r => r.spo2)).toFixed(1),
       };
 
-      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.bloodPressure}. Give personalized health and lifestyle advice.`;
+      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.spo2}. Give personalized health and lifestyle advice.`;
     } else if (mode === 'chat') {
       if (!userMessage) {
         return res.status(400).json({ message: 'No message provided for chat.' });
