@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 
 const healthDataSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // ✅ rename to 'user'
-  temperature: Number, // ✅ ADD this field if you're using it in your dashboard
-  humidity: Number,
-  air: Number, // ✅ ADD this field if you're using it in your dashboard
+  heartRate: Number,
+  temperature: Number,
+  bloodPressure: String, // ✅ ADD this field if you're using it in your dashboard
   timestamp: { type: Date, default: Date.now }
 });
 
