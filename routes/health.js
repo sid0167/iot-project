@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const HealthData = require('../models/HealthData');
 const router = express.Router();
-const moment = require('moment'); 
+const moment = require('moment');
 const Vitals = require('../models/UserVitals');
 
 // ✅ Middleware to verify JWT token (move this up)
@@ -125,7 +125,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
     let prompt = '';
 
     if (mode === 'advice') {
-      const healthData = await Health.find({ userId });
+      const healthData = await HealthData.find({ user: userId }); // Use HealthData here
       if (!healthData.length) {
         return res.status(404).json({ message: 'No data for advice' });
       }
@@ -137,7 +137,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
         spo2: avg(healthData.map(r => r.spo2)).toFixed(1),
       };
 
-      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.spo2}. Give personalized health and lifestyle advice.`;
+      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.spo2}. Give personalized health and lifestyle advice.`; // Use spo2
     } else if (mode === 'chat') {
       if (!userMessage) {
         return res.status(400).json({ message: 'No message provided for chat.' });
@@ -170,7 +170,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
 });
 
 
-//hieght, weight & BMI
+// hieght, weight & BMI
 // height, weight & BMI with category
 router.post('/UserVitals', authMiddleware, async (req, res) => {
   const { height, weight } = req.body;
@@ -212,4 +212,3 @@ router.post('/UserVitals', authMiddleware, async (req, res) => {
   }
 });
 module.exports = router;
-
