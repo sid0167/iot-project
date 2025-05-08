@@ -83,26 +83,47 @@ router.get('/all', authMiddleware, async (req, res) => {
 });
 
 // ✅ GET health prediction based on last week's average
+// ✅ GET health prediction based on latest data with nuanced analysis
 router.get('/predict', authMiddleware, async (req, res) => {
-  const oneWeekAgo = moment().subtract(7, 'days').toDate();
-  const data = await HealthData.find({
-    user: req.userId,
-    timestamp: { $gte: oneWeekAgo }
-  });
+  const latestData = await HealthData.findOne({ user: req.userId })
+    .sort({ timestamp: -1 }); // Get the latest entry
 
-  if (data.length === 0) return res.json({ message: "No recent data" });
+  if (!latestData) {
+    return res.json({ message: "No data available" });
+  }
 
-  const avg = (arr) => arr.reduce((sum, val) => sum + val, 0) / arr.length;
+  const temperature = latestData.temperature;
+  const heartRate = latestData.heartRate;
 
-  const tempAvg = avg(data.map(d => d.temperature));
-  const heartAvg = avg(data.map(d => d.heartRate));
+  // Predict temperature status
+  let tempStatus = "Normal";
+  if (temperature > 38.5) tempStatus = "High Fever";
+  else if (temperature > 37.5) tempStatus = "Slightly High";
+  else if (temperature < 35.5) tempStatus = "Very Low";
+  else if (temperature < 36.5) tempStatus = "Slightly Low";
+
+  // Predict heart rate status
+  let heartStatus = "Normal";
+  if (heartRate > 110) heartStatus = "High Heart Rate";
+  else if (heartRate > 90) heartStatus = "Slightly High";
+  else if (heartRate < 50) heartStatus = "Very Low Heart Rate";
+  else if (heartRate < 60) heartStatus = "Slightly Low";
+
+  // Combined prediction
+  let prediction = "Stable";
+  if (tempStatus !== "Normal" || heartStatus !== "Normal") {
+    prediction = `${tempStatus}, ${heartStatus}`;
+  }
 
   res.json({
-    prediction: "Stable",
-    averageTemperature: tempAvg.toFixed(2),
-    averageHeartRate: heartAvg.toFixed(2)
+    prediction,
+    temperature: temperature.toFixed(2),
+    heartRate: heartRate.toFixed(2),
+    temperatureStatus: tempStatus,
+    heartRateStatus: heartStatus
   });
 });
+
 // TEMP: Insert 2 weeks of sample data
 
 // GET /api/health/timeline
@@ -137,7 +158,7 @@ router.post('/gemini', authMiddleware, async (req, res) => {
         spo2: avg(healthData.map(r => r.spo2)).toFixed(1),
       };
 
-      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, Blood Pressure: ${summary.spo2}. Give personalized health and lifestyle advice.`; // Use spo2
+      prompt = `My health vitals are: Temperature: ${summary.temperature}, Heart Rate: ${summary.heartRate}, spo2 ${summary.spo2}. Give personalized health and lifestyle advice.`; // Use spo2
     } else if (mode === 'chat') {
       if (!userMessage) {
         return res.status(400).json({ message: 'No message provided for chat.' });
